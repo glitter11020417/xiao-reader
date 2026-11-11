@@ -106,10 +106,16 @@ article>h3{font-size:20px;margin:0;font-weight:600}
 <h3 class="hh">提示词</h3>
 <div id="ps"></div>
 <p class="sub">批注的输出格式（JSON）由程序自动附加在批注提示词之后，不在此处编辑。可用占位符：{{称呼}} {{书名}} {{原文}} {{之前的批注}} {{当前位置附近原文}} {{对话记录}} {{批注汇总}} {{讨论汇总}}</p>
+<h3 class="hh">备份与恢复</h3>
+<p class="sub">导出为一个 .zip 文件，可在另一台设备或重装后导入。书籍文件较大，可以只备份笔记。</p>
+<div class="row"><label><input type="checkbox" id="bk-books" style="width:auto"> 同时包含书籍文件（EPUB）</label>
+<label><input type="checkbox" id="bk-key" style="width:auto"> 同时包含 API Key（文件里是明文，请妥善保管）</label></div>
+<div class="btns"><button class="pri" id="bk-exp">导出备份</button><button id="bk-imp">导入备份</button><input id="bk-file" type="file" accept=".zip,application/zip" hidden></div>
+<div class="out" id="bk-out"></div>
 </section>
 
 <section id="v-read">
-  <div id="rb"><button id="back">‹ 书架</button><div id="rt"></div><button id="fm">A−</button><button id="fp">A+</button><button id="nt">批注</button></div>
+  <div id="rb"><button id="back">‹ 书架</button><div id="rt"></div><select id="toc" style="width:auto;max-width:170px"><option value="">目录</option></select><button id="pv">‹</button><button id="nx">›</button><button id="fm">A−</button><button id="fp">A+</button><button id="nt">批注</button></div>
   <div id="st"></div>
   <div id="rm"><div id="stage"><div id="viewer"></div><button class="zone" id="zl" style="left:0"></button><button class="zone" id="zr" style="right:0"></button></div>
   <aside id="side"></aside></div>
@@ -232,13 +238,13 @@ async function renderShelf(){
     if(b.cover){const i=document.createElement("img");i.src=URL.createObjectURL(b.cover);cv.append(i)}else cv.textContent=b.title;
     const t=document.createElement("div");t.className="bt";t.textContent=b.title;
     const m=document.createElement("div");m.className="bm";
-    const p=document.createElement("span");p.textContent="已读 "+Math.round((b.pct||0)*100)+"%";
+    const p=document.createElement("span");p.textContent=b.missing?"缺少书籍文件":"已读 "+Math.round((b.pct||0)*100)+"%";
     const x=document.createElement("span");x.textContent="删除";x.style.cursor="pointer";
     x.onclick=async e=>{e.stopPropagation();if(!confirm("删除《"+b.title+"》及其全部批注和讨论？"))return;
       await dbDel("books",b.id);await dbDel("files",b.id);
       for(const n of await dbAll("notes"))if(n.bookId===b.id)await dbDel("notes",n.id);
       for(const c of await dbAll("chats"))if(c.bookId===b.id)await dbDel("chats",c.id);renderShelf()};
-    m.append(p,x);d.append(cv,t,m);d.onclick=()=>openBook(b.id);g.append(d);
+    m.append(p,x);d.append(cv,t,m);d.onclick=()=>b.missing?alert("这本书的 EPUB 文件不在本机（备份里没有包含书籍）。请用「导入 EPUB」重新导入同一本书，笔记会自动对应。"):openBook(b.id);g.append(d);
   });
 }
 $("#file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
@@ -252,7 +258,9 @@ $("#file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)
       try{const u=await b.coverUrl();if(u)cover=await(await fetch(u)).blob()}catch(x){}
       try{b.destroy()}catch(x){}
     }catch(x){console.warn(x)}
-    step="保存到本地";const id=uid();await dbPut("files",{id,data:buf});
+    step="保存到本地";const miss=(await dbAll("books")).find(x=>x.missing&&x.title===title);
+    if(miss){await dbPut("files",{id:miss.id,data:buf});miss.missing=false;if(cover&&!miss.cover)miss.cover=cover;await dbPut("books",miss);renderShelf();return}
+    const id=uid();await dbPut("files",{id,data:buf});
     await dbPut("books",{id,title,author,cover,pos:null,pct:0,annTo:0,added:Date.now()});renderShelf();
   }catch(x){alert("导入失败（"+step+"）："+(x&&x.message||x))}};
 
@@ -265,6 +273,7 @@ const pos=()=>Math.floor(pct*fullText.length);
 
 async function openBook(id){
   cur=await dbGet("books",id);const f=await dbGet("files",id);
+  if(!f){alert("这本书的文件不在本机，请用「导入 EPUB」重新导入同一本书，笔记会自动对应。");return}
   notes=(await dbAll("notes")).filter(n=>n.bookId===id).sort((a,b)=>a.pct-b.pct);
   chats=(await dbAll("chats")).filter(c=>c.bookId===id).sort((a,b)=>a.t-b.t);
   annTo=cur.annTo||0;pct=cur.pct||0;ready=false;shown=0;sel="";fullText="";
@@ -275,16 +284,19 @@ async function openBook(id){
     rend=book.renderTo("viewer",{width:s.clientWidth-44,height:s.clientHeight-8,flow:"paginated",spread:"auto"});
     rend.themes.override("color","#2c3a2d");rend.themes.override("background","transparent");rend.themes.override("font-family",FONT);rend.themes.fontSize(fs+"%");
     rend.on("relocated",onRel);rend.on("selected",onSel);
+    rend.on("displayerror",e=>status("章节加载失败："+((e&&e.message)||e)));
+    let tx=0;rend.on("touchstart",e=>{tx=e.changedTouches[0].screenX});rend.on("touchend",e=>{const dx=e.changedTouches[0].screenX-tx;if(Math.abs(dx)>50)go(dx<0?"next":"prev")});
+    book.loaded.navigation.then(nav=>{const t=$("#toc");t.innerHTML='<option value="">目录</option>';(function w(a,d){a.forEach(x=>{const o=document.createElement("option");o.value=x.href;o.textContent="　".repeat(d)+x.label.trim();t.append(o);w(x.subitems||[],d+1)})})(nav.toc,0)}).catch(()=>{});
     await rend.display(cur.pos||undefined);
     renderSide();renderChat();prepare(f);
   }catch(e){status("这本书打不开："+e.message)}
 }
 async function prepare(f){
-  status("正在翻开书页……");await book.ready;
+  status("正在为全书建立页码，大书可能需要几十秒，期间翻页可能卡顿……");await book.ready;
   if(f.locs)book.locations.load(f.locs);else await book.locations.generate(1000);
   total=Math.max(1,book.locations.total);
   if(f.text)fullText=f.text;else{
-    const ps=[];for(const it of book.spine.spineItems){try{const c=await it.load(book.load.bind(book));ps.push((c.querySelector("body")||c).textContent);it.unload()}catch(e){}}
+    const ps=[];let k=0;for(const it of book.spine.spineItems){status("正在读取全书 "+(++k)+"/"+book.spine.spineItems.length+"……");try{const c=await it.load(book.load.bind(book));ps.push((c.querySelector("body")||c).textContent);it.unload()}catch(e){}}
     fullText=ps.join(" ").replace(/\s+/g," ");
   }
   if(!f.locs||!f.text){f.locs=book.locations.save();f.text=fullText;await dbPut("files",f)}
@@ -332,8 +344,10 @@ $("#back").onclick=()=>{$("#v-read").style.display="none";$("#fab").style.displa
 $("#nt").onclick=()=>{$("#side").classList.toggle("hide");setTimeout(fit,60)};
 $("#fp").onclick=()=>setFs(fs+10);$("#fm").onclick=()=>setFs(fs-10);
 const setFs=v=>{fs=Math.max(70,Math.min(200,v));rend&&rend.themes.fontSize(fs+"%")};
-$("#zl").onclick=()=>rend&&rend.prev();$("#zr").onclick=()=>rend&&rend.next();
-addEventListener("keydown",e=>{if(!rend||e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;if(e.key==="ArrowRight")rend.next();if(e.key==="ArrowLeft")rend.prev()});
+const go=d=>{if(!rend)return;status("");rend[d]().catch(e=>status("翻页失败："+((e&&e.message)||e)))};
+$("#zl").onclick=$("#pv").onclick=()=>go("prev");$("#zr").onclick=$("#nx").onclick=()=>go("next");
+$("#toc").onchange=e=>{const v=e.target.value;e.target.value="";if(v&&rend)rend.display(v).catch(x=>status("无法跳转："+((x&&x.message)||x)))};
+addEventListener("keydown",e=>{if(!rend||e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;if(e.key==="ArrowRight")go("next");if(e.key==="ArrowLeft")go("prev")});
 let rt;function fit(){clearTimeout(rt);rt=setTimeout(()=>{if(rend){const s=$("#stage");rend.resize(s.clientWidth-44,s.clientHeight-8)}},120)}
 addEventListener("resize",fit);
 
@@ -402,7 +416,7 @@ function exportMd(b,ns,cs){
   [...ns.map(n=>({k:"n",p:n.pct,n})),...cs.map(c=>({k:"c",p:c.pct,n:c}))].sort((x,y)=>x.p-y.p).forEach(e=>{
     if(e.n.quote)s+="> "+e.n.quote+"\n>\n> 出自《"+b.title+"》"+(e.n.ch?"· "+e.n.ch:"")+"\n\n";
     s+=e.k==="n"?"魈："+e.n.note+"\n\n":"**"+S.call+"**："+e.n.q+"\n\n魈："+e.n.a+"\n\n";s+="---\n\n"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([s],{type:"text/markdown"}));a.download=b.title+"-阅读笔记.md";a.click();
+  saveFile(new Blob([s],{type:"text/markdown"}),b.title+"-阅读笔记.md");
 }
 
 /* ---------- 接口配置 ---------- */
@@ -437,6 +451,60 @@ function initProf(){
     try{const r=await callP(cur,m,"请只回复两个字：连通",40);out("✓ 对话成功（模型 "+m+"，用时 "+(Date.now()-t0)+" 毫秒）\n回复："+r.trim().slice(0,60))}
     catch(e){out("✗ "+e.message)}};
 }
+
+/* ---------- 备份与恢复 ---------- */
+async function saveFile(blob,name){
+  const f=new File([blob],name,{type:blob.type});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e&&e.name==="AbortError")return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();
+}
+async function exportAll(){
+  const out=$("#bk-out"),withBooks=$("#bk-books").checked,withKey=$("#bk-key").checked;out.textContent="正在打包……";
+  try{
+    const z=new JSZip(),books=await dbAll("books"),notes=await dbAll("notes"),chats=await dbAll("chats");
+    const set=JSON.parse(JSON.stringify(S));if(!withKey)set.profiles.forEach(p=>p.key="");
+    const meta=books.map(b=>{const m=Object.assign({},b);delete m.cover;m.coverType=b.cover?b.cover.type:"";return m});
+    z.file("data.json",JSON.stringify({v:1,t:Date.now(),settings:set,books:meta,notes,chats}));
+    for(const b of books){if(b.cover)z.file("covers/"+b.id,b.cover);if(withBooks){const f=await dbGet("files",b.id);if(f)z.file("books/"+b.id+".epub",f.data)}}
+    const blob=await z.generateAsync({type:"blob"});
+    const d=new Date(),ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");
+    await saveFile(blob,"xiao-reader-backup-"+ds+".zip");
+    out.textContent="✓ 已导出："+books.length+" 本书、"+notes.length+" 条批注、"+chats.length+" 次讨论"+(withBooks?"（含书籍文件）":"（不含书籍文件）");
+  }catch(e){out.textContent="✗ 导出失败："+e.message}
+}
+async function importAll(file){
+  const out=$("#bk-out");out.textContent="正在读取……";
+  try{
+    const z=await JSZip.loadAsync(file),dj=z.file("data.json");if(!dj)throw new Error("这不是魈的伴读书房的备份文件");
+    const d=JSON.parse(await dj.async("string"));
+    if(!confirm("将合并备份中的书籍、批注和讨论；同一本书已有的内容会被备份覆盖。继续？")){out.textContent="";return}
+    const local=await dbAll("books"),map={};let nb=0;
+    for(const b of d.books||[]){
+      const t=local.find(x=>x.id===b.id)||local.find(x=>x.title===b.title&&(x.author||"")===(b.author||"")),bf=z.file("books/"+b.id+".epub");
+      if(t){map[b.id]=t.id;
+        if(bf&&t.missing){await dbPut("files",{id:t.id,data:await bf.async("arraybuffer")});t.missing=false}
+        t.annTo=Math.max(t.annTo||0,b.annTo||0);if(b.summary&&!t.summary)t.summary=b.summary;
+        if((b.pct||0)>(t.pct||0)){t.pct=b.pct;t.pos=b.pos}
+        await dbPut("books",t);
+      }else{
+        const n=Object.assign({},b),cf=z.file("covers/"+b.id);delete n.coverType;
+        n.cover=cf?new Blob([await cf.async("arraybuffer")],{type:b.coverType||"image/jpeg"}):null;
+        if(bf)await dbPut("files",{id:b.id,data:await bf.async("arraybuffer")});else n.missing=true;
+        await dbPut("books",n);map[b.id]=b.id;nb++;
+      }
+    }
+    for(const n of d.notes||[]){n.bookId=map[n.bookId]||n.bookId;await dbPut("notes",n)}
+    for(const c of d.chats||[]){c.bookId=map[c.bookId]||c.bookId;await dbPut("chats",c)}
+    let msg="✓ 已导入："+(d.books||[]).length+" 本书、"+(d.notes||[]).length+" 条批注、"+(d.chats||[]).length+" 次讨论";
+    if(d.settings&&confirm("同时恢复备份里的设置（接口、提示词、称呼等）吗？本机已填的 API Key 会保留。")){
+      const ns=d.settings;(ns.profiles||[]).forEach(p=>{if(!p.key){const l=S.profiles.find(x=>x.id===p.id);if(l)p.key=l.key}});
+      Object.assign(S,ns);save();msg+="，设置已恢复";out.textContent=msg+"。页面即将刷新……";setTimeout(()=>location.reload(),1200);return;
+    }
+    out.textContent=msg+(nb&&!(d.books||[]).some(b=>z.file("books/"+b.id+".epub"))?"。备份里不含书籍文件，请到书架重新导入对应的 EPUB。":"。");
+  }catch(e){out.textContent="✗ 导入失败："+e.message}
+}
+$("#bk-exp").onclick=exportAll;$("#bk-imp").onclick=()=>$("#bk-file").click();
+$("#bk-file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)importAll(f)};
 
 /* ---------- 设置 ---------- */
 (function(){
