@@ -44,6 +44,7 @@ article>h3{font-size:20px;margin:0;font-weight:600}
 .mine{color:var(--mute);margin-top:6px}
 .row{margin:0 0 16px}.row label{display:block;font-size:14px;color:var(--mute)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.out{font-size:13px;color:var(--mute);margin:6px 0;white-space:pre-wrap;word-break:break-all}.btns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}h3.hh{font-size:18px;margin:22px 0 8px;font-weight:600}
 #v-read{position:fixed;inset:0;z-index:40;background:var(--bg);display:none;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 #rb{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--line)}
 #rt{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600}
@@ -77,14 +78,32 @@ article>h3{font-size:20px;margin:0;font-weight:600}
 <section class="page" id="v-notes"></section>
 
 <section class="page" id="v-set">
-<h2>设置</h2><p class="sub">API Key 只保存在这台设备上，请求直接发往 Anthropic。</p>
-<div class="row"><label>API Key</label><input id="s-key" type="password" autocomplete="off" placeholder="sk-ant-..."></div>
+<h2>设置</h2><p class="sub">API Key 只保存在这台设备上，请求直接发往你填写的接口地址。</p>
+<h3 class="hh">接口</h3>
 <div class="two">
+<div class="row"><label>已保存的接口</label><select id="pf-sel"></select></div>
+<div class="row"><label>套用预设</label><select id="pf-preset"></select></div>
+</div>
+<div class="btns"><button id="pf-add">＋ 新增接口</button><button id="pf-del">删除当前接口</button></div>
+<div class="two">
+<div class="row"><label>名称</label><input id="pf-name"></div>
+<div class="row"><label>协议</label><select id="pf-type"><option value="openai">OpenAI 兼容（/chat/completions）</option><option value="anthropic">Anthropic（/v1/messages）</option></select></div>
+</div>
+<div class="row"><label>接口地址（Base URL）</label><input id="pf-url" placeholder="例如 https://api.x.ai/v1" autocapitalize="off" autocorrect="off"></div>
+<div class="row"><label>API Key</label><input id="pf-key" type="password" autocomplete="off"></div>
+<div class="row"><label>测试用模型</label><input id="pf-tm" list="dl-cur" placeholder="先点「拉取模型」，再从中选择"><datalist id="dl-cur"></datalist></div>
+<div class="btns"><button id="pf-fetch">拉取模型</button><button id="pf-test" class="pri">测试对话</button></div>
+<div class="out" id="pf-out"></div>
+<h3 class="hh">用途</h3>
+<div class="two">
+<div class="row"><label>批注：使用的接口</label><select id="t-aP"></select></div>
+<div class="row"><label>批注：模型</label><input id="t-aM" list="dl-a"><datalist id="dl-a"></datalist></div>
+<div class="row"><label>讨论与整理：使用的接口</label><select id="t-cP"></select></div>
+<div class="row"><label>讨论与整理：模型</label><input id="t-cM" list="dl-c"><datalist id="dl-c"></datalist></div>
 <div class="row"><label>魈对你的称呼</label><input id="s-call"></div>
 <div class="row"><label>每次向前批注的页数</label><input id="s-ahead" type="number" min="5" max="40"></div>
-<div class="row"><label>批注模型</label><select id="s-mA"></select></div>
-<div class="row"><label>讨论与整理模型</label><select id="s-mC"></select></div>
 </div>
+<h3 class="hh">提示词</h3>
 <div id="ps"></div>
 <p class="sub">批注的输出格式（JSON）由程序自动附加在批注提示词之后，不在此处编辑。可用占位符：{{称呼}} {{书名}} {{原文}} {{之前的批注}} {{当前位置附近原文}} {{对话记录}} {{批注汇总}} {{讨论汇总}}</p>
 </section>
@@ -99,8 +118,8 @@ article>h3{font-size:20px;margin:0;font-weight:600}
 <button id="fab" aria-label="和魈聊聊">谈</button>
 <section id="chat"><div id="ch"><b>和魈聊聊</b><button id="cx" style="padding:0 9px">×</button></div><div id="cl"></div><div id="qc"></div><div id="cf"><input id="ci" placeholder="想和魈说点什么……"><button class="pri" id="cs">发送</button></div></section>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/epub.js/0.3.93/epub.min.js"></script>
+<script src="jszip.min.js"></script>
+<script src="epub.min.js"></script>
 <script>
 const $=s=>document.querySelector(s),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const FONT='"Songti SC","STSong","Noto Serif SC","SimSun",serif';
@@ -151,9 +170,10 @@ sum:`请以魈的口吻，为{{称呼}}和你共读的《{{书名}}》写一份�
 {{讨论汇总}}`};
 const FORMAT='\n\n【输出格式】只返回 JSON 数组，不要任何其他文字：[{"quote":"原文中逐字出现的 6 到 14 个连续字符","note":"批注内容"}]，按原文顺序排列。';
 const PN={persona:"魈的人设",annot:"批注提示词",chat:"讨论提示词",sum:"笔记整理提示词"};
-const MODELS=[["claude-haiku-5-5","Haiku 5.5（快、便宜）"],["claude-sonnet-5-5","Sonnet 5.5（均衡）"],["claude-opus-5-5","Opus 5.5（最强、最贵）"]];
-let S={key:"",call:"旅行者",ahead:20,mA:"claude-haiku-5-5",mC:"claude-sonnet-5-5",p:{}};
-try{Object.assign(S,JSON.parse(localStorage.getItem("xr:set")||"{}"))}catch(e){}
+const PRESETS=[["Anthropic","anthropic","https://api.anthropic.com"],["Google Gemini","openai","https://generativelanguage.googleapis.com/v1beta/openai"],["xAI Grok","openai","https://api.x.ai/v1"],["OpenRouter","openai","https://openrouter.ai/api/v1"],["OpenAI","openai","https://api.openai.com/v1"],["自定义（OpenAI 兼容）","openai",""],["自定义（Anthropic 兼容）","anthropic",""]];
+let S={call:"旅行者",ahead:20,profiles:[],aP:"",aM:"",cP:"",cM:"",p:{}};
+try{const o=JSON.parse(localStorage.getItem("xr:set")||"{}");Object.assign(S,o);
+  if(!S.profiles||!S.profiles.length){const id=uid();S.profiles=[{id,name:"Anthropic",type:"anthropic",url:"https://api.anthropic.com",key:o.key||"",models:["claude-haiku-5-5","claude-sonnet-5-5","claude-opus-5-5"],tm:""}];S.aP=S.cP=id;S.aM=o.mA||"claude-haiku-5-5";S.cM=o.mC||"claude-sonnet-5-5"}}catch(e){}
 const save=()=>{try{localStorage.setItem("xr:set",JSON.stringify(S))}catch(e){}};
 const P=k=>(S.p&&S.p[k])||DEF[k];
 const fill=(t,v)=>t.replace(/\{\{(.+?)\}\}/g,(m,k)=>v[k]!==undefined?v[k]:m);
@@ -164,12 +184,35 @@ const tx=async(s,m,f)=>{const d=await DB;return new Promise((ok,no)=>{const t=d.
 const dbAll=s=>tx(s,"readonly",o=>o.getAll()),dbGet=(s,k)=>tx(s,"readonly",o=>o.get(k)),dbPut=(s,v)=>tx(s,"readwrite",o=>o.put(v)),dbDel=(s,k)=>tx(s,"readwrite",o=>o.delete(k));
 
 /* ---------- LLM ---------- */
-async function llm(model,prompt,max){
-  if(!S.key)throw new Error("请先在「设置」里填写 API Key");
-  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":S.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:max||2000,messages:[{role:"user",content:prompt}]})});
-  const j=await r.json();if(!r.ok)throw new Error((j.error&&j.error.message)||("请求失败 "+r.status));
-  return j.content.map(c=>c.text||"").join("");
+const baseOf=p=>p.url.trim().replace(/\/+$/,"");
+const errMsg=j=>j&&j.error?(j.error.message||(typeof j.error==="string"?j.error:JSON.stringify(j.error))):((j&&j.message)||"");
+async function hf(url,opt){try{return await fetch(url,opt)}catch(e){throw new Error("无法连接（"+e.message+"）。可能是网络不通，或该服务不允许浏览器直接访问（CORS）。")}}
+async function callP(p,model,prompt,max){
+  if(!p||!p.key)throw new Error("请先在「设置」里添加接口并填写 API Key");
+  if(!model)throw new Error("请先在「设置」里选择模型");
+  const b=baseOf(p);
+  if(p.type==="anthropic"){
+    const r=await hf(b.replace(/\/v1$/,"")+"/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":p.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:max,messages:[{role:"user",content:prompt}]})});
+    const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(errMsg(j)||("请求失败 "+r.status));
+    return j.content.map(c=>c.text||"").join("");
+  }
+  const go=k=>hf(b+"/chat/completions",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+p.key},body:JSON.stringify({model,[k]:max*3,messages:[{role:"user",content:prompt}]})});
+  let r=await go("max_tokens"),j=await r.json().catch(()=>({}));
+  if(!r.ok&&/max_completion_tokens/.test(errMsg(j))){r=await go("max_completion_tokens");j=await r.json().catch(()=>({}))}
+  if(!r.ok)throw new Error(errMsg(j)||("请求失败 "+r.status));
+  const c=j.choices&&j.choices[0]&&j.choices[0].message,t=c&&(typeof c.content==="string"?c.content:(c.content||[]).map(x=>x.text||"").join(""));
+  if(!t)throw new Error("接口返回了空内容（可能模型名不对，或额度被思考过程用完）");
+  return t;
 }
+async function fetchModels(p){
+  if(!p.key)throw new Error("请先填写 API Key");
+  const b=baseOf(p);
+  const r=p.type==="anthropic"?await hf(b.replace(/\/v1$/,"")+"/v1/models?limit=1000",{headers:{"x-api-key":p.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"}}):await hf(b+"/models",{headers:{authorization:"Bearer "+p.key}});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(errMsg(j)||("请求失败 "+r.status));
+  return (j.data||j.models||[]).map(m=>String(typeof m==="string"?m:(m.id||m.name||"")).replace(/^models\//,"")).filter(Boolean).sort();
+}
+const llm=(task,prompt,max)=>{const a=task==="A";return callP(S.profiles.find(x=>x.id===(a?S.aP:S.cP)),a?S.aM:S.cM,prompt,max||2000)};
+const hasLLM=()=>{const p=S.profiles.find(x=>x.id===S.aP);return !!(p&&p.key&&S.aM)};
 
 /* ---------- 视图 ---------- */
 function view(n){
@@ -199,13 +242,19 @@ async function renderShelf(){
   });
 }
 $("#file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  let step="读取文件";
   try{
-    const buf=await f.arrayBuffer(),b=ePub(buf.slice(0)),m=await b.loaded.metadata;let cover=null;
-    try{const u=await b.coverUrl();if(u)cover=await(await fetch(u)).blob()}catch(x){}
-    const id=uid();await dbPut("files",{id,data:buf});
-    await dbPut("books",{id,title:m.title||f.name.replace(/\.epub$/i,""),author:m.creator||"",cover,pos:null,pct:0,annTo:0,added:Date.now()});
-    b.destroy&&b.destroy();renderShelf();
-  }catch(x){alert("这本书无法导入，可能是加密（DRM）或损坏的 EPUB。")}};
+    if(typeof ePub==="undefined")throw new Error("阅读组件没有加载成功，请刷新页面");
+    const buf=await f.arrayBuffer();let title=f.name.replace(/\.epub$/i,""),author="",cover=null;
+    try{step="解析书籍信息";const b=ePub(buf.slice(0),{openAs:"binary"});
+      const m=await Promise.race([b.loaded.metadata,new Promise((_,no)=>setTimeout(()=>no(new Error("解析超时")),15000))]);
+      title=m.title||title;author=m.creator||"";
+      try{const u=await b.coverUrl();if(u)cover=await(await fetch(u)).blob()}catch(x){}
+      try{b.destroy()}catch(x){}
+    }catch(x){console.warn(x)}
+    step="保存到本地";const id=uid();await dbPut("files",{id,data:buf});
+    await dbPut("books",{id,title,author,cover,pos:null,pct:0,annTo:0,added:Date.now()});renderShelf();
+  }catch(x){alert("导入失败（"+step+"）："+(x&&x.message||x))}};
 
 /* ---------- 阅读器 ---------- */
 let cur,book,rend,fullText="",total=1,pct=0,annTo=0,busy=false,failAt=0,ready=false,notes=[],chats=[],sel="",shown=0,fs=110,tmap={},saveT,toastT;
@@ -222,7 +271,7 @@ async function openBook(id){
   $("#v-read").style.display="flex";$("#rt").textContent=cur.title;$("#viewer").innerHTML="";$("#fab").style.display="block";
   if(innerWidth<=820)$("#side").classList.add("hide");
   try{
-    book=ePub(f.data.slice(0));const s=$("#stage");
+    if(typeof ePub==="undefined")throw new Error("阅读组件没有加载成功，请刷新页面");book=ePub(f.data.slice(0),{openAs:"binary"});const s=$("#stage");
     rend=book.renderTo("viewer",{width:s.clientWidth-44,height:s.clientHeight-8,flow:"paginated",spread:"auto"});
     rend.themes.override("color","#2c3a2d");rend.themes.override("background","transparent");rend.themes.override("font-family",FONT);rend.themes.fontSize(fs+"%");
     rend.on("relocated",onRel);rend.on("selected",onSel);
@@ -250,7 +299,7 @@ function onRel(l){
   if(n.length>shown){toast(n[n.length-1].note);}
   shown=n.length;renderSide();check();
 }
-function check(){if(!ready||busy||!fullText||annTo>=1||!S.key)return;if(Date.now()-failAt<30000)return;if(pct+1.5/total<annTo)return;annotate()}
+function check(){if(!ready||busy||!fullText||annTo>=1||!hasLLM())return;if(Date.now()-failAt<30000)return;if(pct+1.5/total<annTo)return;annotate()}
 const chapterOf=cfi=>{try{const h=book.spine.get(cfi).href,k=Object.keys(tmap).find(k=>h.endsWith(k)||k.endsWith(h));return k?tmap[k]:""}catch(e){return""}};
 async function annotate(){
   busy=true;status("魈在替你看后面的篇章……");
@@ -259,7 +308,7 @@ async function annotate(){
   if(seg.length<50){annTo=1;busy=false;status("");return}
   let tpl=P("annot");if(!tpl.includes("{{原文}}"))tpl+="\n\n原文：\n{{原文}}";
   try{
-    const raw=await llm(S.mA,fill(P("persona"),V())+"\n\n"+fill(tpl,V({原文:seg}))+FORMAT,3000);
+    const raw=await llm("A",fill(P("persona"),V())+"\n\n"+fill(tpl,V({原文:seg}))+FORMAT,3000);
     const arr=JSON.parse(raw.slice(raw.indexOf("["),raw.lastIndexOf("]")+1));
     for(const it of arr){
       const q=String(it.quote||"").trim();if(!q||!it.note)continue;
@@ -274,7 +323,7 @@ async function annotate(){
 }
 function renderSide(){
   const s=$("#side");s.innerHTML="";const l=unlocked();
-  if(!l.length){s.innerHTML='<div class="sub" style="margin-top:12px">还没有批注。读到哪里，批注就出现在哪里。'+(S.key?"":"<br>（请先在「设置」中填写 API Key）")+"</div>";return}
+  if(!l.length){s.innerHTML='<div class="sub" style="margin-top:12px">还没有批注。读到哪里，批注就出现在哪里。'+(hasLLM()?"":"<br>（请先在「设置」中添加接口、填写 API Key 并选择批注模型）")+"</div>";return}
   l.forEach(n=>{const d=document.createElement("div");d.className="ent";const q=document.createElement("q");q.textContent=n.quote;const t=document.createElement("div");t.className="mine";t.textContent="魈："+n.note;d.append(q,t);d.onclick=()=>rend.display(n.cfi);s.append(d)});
   s.scrollTop=s.scrollHeight;
 }
@@ -310,7 +359,7 @@ async function send(){
   const p=pos(),here=fullText.slice(Math.max(0,p-1500),p+400);
   const hist=chats.slice(-9).map(c=>S.call+"："+(c.quote?"「"+c.quote+"」 ":"")+c.q+(c===rec?"":"\n魈："+c.a)).join("\n");
   try{
-    rec.a=(await llm(S.mC,fill(P("persona"),V())+"\n\n"+fill(P("chat"),V({当前位置附近原文:here,对话记录:hist})),700)).replace(/^\s*魈[：:]\s*/,"").trim();
+    rec.a=(await llm("C",fill(P("persona"),V())+"\n\n"+fill(P("chat"),V({当前位置附近原文:here,对话记录:hist})),700)).replace(/^\s*魈[：:]\s*/,"").trim();
     await dbPut("chats",rec);
   }catch(e){chats.splice(chats.indexOf(rec),1);$("#ci").value=t;status(e.message)}
   renderChat();
@@ -331,7 +380,7 @@ async function renderNotes(){
     const bs=document.createElement("button");bs.textContent=b.summary?"重新整理":"让魈整理";
     bs.onclick=async()=>{bs.disabled=true;bs.textContent="魈在整理……";
       try{cur=b;notes=ns;
-        const txt=await llm(S.mC,fill(P("persona"),{称呼:S.call})+"\n\n"+fill(P("sum"),{称呼:S.call,书名:b.title,批注汇总:ns.map(n=>"「"+n.quote+"」→"+n.note).join("\n")||"（暂无）",讨论汇总:cs.map(c=>(c.quote?"「"+c.quote+"」 ":"")+S.call+"："+c.q+"\n魈："+c.a).join("\n")||"（暂无）"}),1500);
+        const txt=await llm("C",fill(P("persona"),{称呼:S.call})+"\n\n"+fill(P("sum"),{称呼:S.call,书名:b.title,批注汇总:ns.map(n=>"「"+n.quote+"」→"+n.note).join("\n")||"（暂无）",讨论汇总:cs.map(c=>(c.quote?"「"+c.quote+"」 ":"")+S.call+"："+c.q+"\n魈："+c.a).join("\n")||"（暂无）"}),1500);
         b.summary=txt.trim();await dbPut("books",b);renderNotes()}catch(e){alert(e.message);bs.disabled=false;bs.textContent="让魈整理"}};
     const be=document.createElement("button");be.textContent="导出 Markdown";be.style.marginLeft="8px";be.onclick=()=>exportMd(b,ns,cs);
     bar.append(bs,be);art.append(h,au,bar);
@@ -356,11 +405,44 @@ function exportMd(b,ns,cs){
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([s],{type:"text/markdown"}));a.download=b.title+"-阅读笔记.md";a.click();
 }
 
+/* ---------- 接口配置 ---------- */
+function initProf(){
+  let cur=S.profiles[0];
+  const byId=id=>S.profiles.find(x=>x.id===id);
+  const opt=(sel,list,val)=>{sel.innerHTML="";list.forEach(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent=t;sel.append(o)});sel.value=val};
+  const dl=(id,p)=>{const d=$("#"+id);d.innerHTML="";((p&&p.models)||[]).forEach(m=>{const o=document.createElement("option");o.value=m;d.append(o)})};
+  const lists=()=>{const pl=S.profiles.map(p=>[p.id,p.name||"未命名"]);
+    opt($("#pf-sel"),pl,cur.id);opt($("#t-aP"),pl,S.aP);opt($("#t-cP"),pl,S.cP);
+    opt($("#pf-preset"),[["","选择预设……"]].concat(PRESETS.map((x,i)=>[String(i),x[0]])),"")};
+  const fields=()=>{$("#pf-name").value=cur.name;$("#pf-type").value=cur.type;$("#pf-url").value=cur.url;$("#pf-key").value=cur.key;$("#pf-tm").value=cur.tm||"";
+    $("#t-aM").value=S.aM;$("#t-cM").value=S.cM;dl("dl-cur",cur);dl("dl-a",byId(S.aP));dl("dl-c",byId(S.cP));$("#pf-out").textContent=""};
+  const all=()=>{if(!byId(S.aP))S.aP=S.profiles[0].id;if(!byId(S.cP))S.cP=S.profiles[0].id;lists();fields()};
+  const out=t=>$("#pf-out").textContent=t;
+  all();
+  $("#pf-sel").onchange=e=>{cur=byId(e.target.value);fields()};
+  $("#pf-preset").onchange=e=>{if(e.target.value==="")return;const x=PRESETS[+e.target.value];cur.name=x[0];cur.type=x[1];cur.url=x[2];save();lists();fields()};
+  [["pf-name","name"],["pf-type","type"],["pf-url","url"],["pf-key","key"],["pf-tm","tm"]].forEach(([id,k])=>{const e=$("#"+id);e.oninput=e.onchange=()=>{cur[k]=e.value;save();if(k==="name")lists()}});
+  $("#pf-add").onclick=()=>{cur={id:uid(),name:"新接口",type:"openai",url:"",key:"",models:[],tm:""};S.profiles.push(cur);save();lists();fields()};
+  $("#pf-del").onclick=()=>{if(S.profiles.length<2)return alert("至少保留一个接口");if(!confirm("删除接口「"+cur.name+"」？"))return;
+    S.profiles=S.profiles.filter(x=>x.id!==cur.id);cur=S.profiles[0];save();all()};
+  $("#t-aP").onchange=e=>{S.aP=e.target.value;save();dl("dl-a",byId(S.aP))};
+  $("#t-cP").onchange=e=>{S.cP=e.target.value;save();dl("dl-c",byId(S.cP))};
+  $("#t-aM").oninput=e=>{S.aM=e.target.value.trim();save()};
+  $("#t-cM").oninput=e=>{S.cM=e.target.value.trim();save()};
+  $("#pf-fetch").onclick=async()=>{out("正在拉取模型……");
+    try{const m=await fetchModels(cur);cur.models=m;save();dl("dl-cur",cur);dl("dl-a",byId(S.aP));dl("dl-c",byId(S.cP));
+      out("✓ 连接成功，拉取到 "+m.length+" 个模型。\n"+m.slice(0,8).join("、")+(m.length>8?" 等":"")+"\n点下面的模型输入框即可从列表中选择。")}
+    catch(e){out("✗ "+e.message)}};
+  $("#pf-test").onclick=async()=>{const m=cur.tm||(cur.models&&cur.models[0]);out("正在测试对话……");const t0=Date.now();
+    try{const r=await callP(cur,m,"请只回复两个字：连通",40);out("✓ 对话成功（模型 "+m+"，用时 "+(Date.now()-t0)+" 毫秒）\n回复："+r.trim().slice(0,60))}
+    catch(e){out("✗ "+e.message)}};
+}
+
 /* ---------- 设置 ---------- */
 (function(){
   const bind=(id,k,num)=>{const e=$("#"+id);e.value=S[k];e.oninput=()=>{S[k]=num?(+e.value||20):e.value;save()}};
-  ["s-mA","s-mC"].forEach(id=>MODELS.forEach(m=>{const o=document.createElement("option");o.value=m[0];o.textContent=m[1];$("#"+id).append(o)}));
-  bind("s-key","key");bind("s-call","call");bind("s-ahead","ahead",true);bind("s-mA","mA");bind("s-mC","mC");
+  initProf();
+  bind("s-call","call");bind("s-ahead","ahead",true);
   Object.keys(PN).forEach(k=>{
     const r=document.createElement("div");r.className="row";
     const l=document.createElement("label");l.textContent=PN[k];
