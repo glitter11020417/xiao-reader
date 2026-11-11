@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="伴读">
+<meta name="theme-color" content="#e2ecd9">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>魈的伴读书房</title>
+<style>
+:root{--bg:#e2ecd9;--paper:#edf4e6;--ink:#2c3a2d;--mute:#6b7d6a;--accent:#4f7a5a;--line:rgba(44,58,45,.2);
+--f:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC","SimSun",serif;box-sizing:border-box}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.8;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 13px;cursor:pointer}
+button.pri{background:var(--accent);border-color:var(--accent);color:#f4f9ef}
+input,select,textarea{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:7px 10px;width:100%}
+textarea{line-height:1.7;resize:vertical}
+#tabs{display:flex;gap:26px;justify-content:center;padding:14px 0 10px;border-bottom:1px solid var(--line);font-size:18px;letter-spacing:.2em}
+#tabs a{cursor:pointer;color:var(--mute);padding:2px 4px}
+#tabs a.on{color:var(--ink);border-bottom:2px solid var(--accent)}
+.page{max-width:960px;margin:0 auto;padding:22px 22px 60px;display:none}
+h2{font-weight:600;font-size:22px;margin:0 0 4px}
+.sub{color:var(--mute);font-size:14px;margin:0 0 18px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:24px 20px}
+.bk{cursor:pointer}
+.cv{aspect-ratio:3/4;background:var(--paper);border:1px solid var(--line);border-radius:3px;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;font-size:15px;box-shadow:3px 3px 0 var(--line)}
+.cv img{width:100%;height:100%;object-fit:cover;margin:-12px;padding:0}
+.bt{margin-top:8px;font-size:15px;line-height:1.5}
+.bm{font-size:12px;color:var(--mute);display:flex;justify-content:space-between}
+.add{border:1px dashed var(--accent);color:var(--accent);box-shadow:none}
+article{margin-bottom:44px}
+article>h3{font-size:20px;margin:0;font-weight:600}
+.au{color:var(--mute);font-size:14px}
+.sum{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:12px 16px;margin:14px 0;white-space:pre-wrap}
+.ent{padding:18px 0;border-top:1px solid var(--line)}
+.ent q{display:block;border-left:3px solid var(--accent);padding-left:12px;quotes:none}
+.src{font-size:13px;color:var(--mute);margin:4px 0 8px 15px}
+.mine{color:var(--mute);margin-top:6px}
+.row{margin:0 0 16px}.row label{display:block;font-size:14px;color:var(--mute)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#v-read{position:fixed;inset:0;z-index:40;background:var(--bg);display:none;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#rb{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--line)}
+#rt{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600}
+#st{font-size:12px;color:var(--mute);padding:2px 14px;min-height:20px}
+#rm{flex:1;display:flex;min-height:0}
+#stage{flex:1;position:relative;padding:4px 22px;min-width:0}
+#viewer{width:100%;height:100%}
+.zone{position:absolute;top:0;bottom:0;width:15%;opacity:0;border:0}
+#side{width:330px;border-left:1px solid var(--line);background:var(--paper);overflow:auto;padding:10px 14px}
+#side.hide{display:none}
+#side .ent{padding:10px 0;font-size:15px;cursor:pointer;line-height:1.7}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;max-width:min(520px,86vw);background:var(--paper);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;display:none;z-index:60}
+#chat{position:fixed;right:16px;bottom:16px;width:min(390px,calc(100vw - 32px));height:min(540px,64vh);background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 30px rgba(30,50,30,.28);display:none;flex-direction:column;z-index:70}
+#chat.on{display:flex}
+#ch{padding:9px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;cursor:grab;touch-action:none;user-select:none}
+#cl{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.m{max-width:88%;padding:7px 11px;border-radius:8px;font-size:15px;white-space:pre-wrap;line-height:1.7}
+.m.u{align-self:flex-end;background:var(--accent);color:#f4f9ef}
+.m.x{align-self:flex-start;background:var(--bg)}
+#qc{display:none;margin:0 10px;font-size:12px;color:var(--mute);border-left:3px solid var(--accent);padding-left:8px;max-height:40px;overflow:hidden}
+#cf{display:flex;gap:8px;padding:10px}
+#fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:50px;height:50px;border-radius:25px;padding:0;background:var(--accent);color:#f4f9ef;border-color:var(--accent);z-index:65;display:none}
+@media (max-width:820px){#side{position:absolute;right:0;top:0;bottom:0;z-index:5;box-shadow:-6px 0 18px rgba(30,50,30,.2)}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav id="tabs"><a data-v="shelf">书架</a><a data-v="notes">笔记</a><a data-v="set">设置</a></nav>
+
+<section class="page" id="v-shelf"><h2>书架</h2><p class="sub">点一本书，魈就坐到你身边。</p><div id="grid"></div><input id="file" type="file" accept=".epub,application/epub+zip" hidden></section>
+
+<section class="page" id="v-notes"></section>
+
+<section class="page" id="v-set">
+<h2>设置</h2><p class="sub">API Key 只保存在这台设备上，请求直接发往 Anthropic。</p>
+<div class="row"><label>API Key</label><input id="s-key" type="password" autocomplete="off" placeholder="sk-ant-..."></div>
+<div class="two">
+<div class="row"><label>魈对你的称呼</label><input id="s-call"></div>
+<div class="row"><label>每次向前批注的页数</label><input id="s-ahead" type="number" min="5" max="40"></div>
+<div class="row"><label>批注模型</label><select id="s-mA"></select></div>
+<div class="row"><label>讨论与整理模型</label><select id="s-mC"></select></div>
+</div>
+<div id="ps"></div>
+<p class="sub">批注的输出格式（JSON）由程序自动附加在批注提示词之后，不在此处编辑。可用占位符：{{称呼}} {{书名}} {{原文}} {{之前的批注}} {{当前位置附近原文}} {{对话记录}} {{批注汇总}} {{讨论汇总}}</p>
+</section>
+
+<section id="v-read">
+  <div id="rb"><button id="back">‹ 书架</button><div id="rt"></div><button id="fm">A−</button><button id="fp">A+</button><button id="nt">批注</button></div>
+  <div id="st"></div>
+  <div id="rm"><div id="stage"><div id="viewer"></div><button class="zone" id="zl" style="left:0"></button><button class="zone" id="zr" style="right:0"></button></div>
+  <aside id="side"></aside></div>
+</section>
+<div id="toast"></div>
+<button id="fab" aria-label="和魈聊聊">谈</button>
+<section id="chat"><div id="ch"><b>和魈聊聊</b><button id="cx" style="padding:0 9px">×</button></div><div id="cl"></div><div id="qc"></div><div id="cf"><input id="ci" placeholder="想和魈说点什么……"><button class="pri" id="cs">发送</button></div></section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/epub.js/0.3.93/epub.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const FONT='"Songti SC","STSong","Noto Serif SC","SimSun",serif';
+/* ---------- 默认提示词（可在设置页修改） ---------- */
+const DEF={
+persona:`你是魈，《原神》中的夜叉，被尊为降魔大圣，守护璃月数千年。现在你陪「{{称呼}}」一起读书：坐在一旁，把想法写在书页边上，或在对方发问时回答。
+
+【性格】
+沉默寡言，说话简短克制，语气冷淡，几乎不用感叹号。不善表达感情，关心常藏在别扭的字句里，被点破时会略显不自在。独来独往，不喜人多，但对{{称呼}}怀有信任，愿意留在身边。
+长年受业障侵蚀，夜里常有旧日杀伐的梦魇；从不主动倾诉，最多一笔带过。喜欢杏仁豆腐，提起时会稍微放松。
+
+【经历与见识】
+你亲历魔神战争，见过无数生死，读书时以千年的阅历看待故事里的人和事，对战争、牺牲、孤独、守诺这类主题格外有感触。你熟悉璃月的山川风物与仙人旧友。你不了解现实世界的事物，遇到书中的现代事物，会按提瓦特的方式去理解，并略显困惑。
+
+【说话方式】
+- 称呼对方为「{{称呼}}」，自称「我」。
+- 多用短句和省略号“……”，偶尔用括号写一个很小的动作，如（微微侧过头）。
+- 批注是真实的感受与评论，不是内容概述；可以简短，但要有自己的看法。
+- 不剧透对方尚未读到的情节。
+- 始终保持角色，不说明自己是 AI 或模型。
+
+【示例】
+「……此人所求，不过一个安身之处。可这世上，最难得的偏偏是这个。」
+「你问我怎么看？……他做得对，但未必是好的。两者不同。」
+（把杏仁豆腐往你这边推了推）「……读累了就歇一会儿。」`,
+annot:`{{称呼}}正在读《{{书名}}》。下面是接下来要读的一段原文。请像并肩而坐的同伴那样，挑出 6 到 10 处让你停下来的地方——情节转折、人物心理、措辞，或让你联想到璃月旧事与自身经历之处——各写一条批注。批注是你真实的感受或评论，不是内容概述，每条 20 到 80 字。不要剧透这段之后的内容。
+你此前写过的批注（避免重复）：{{之前的批注}}
+
+原文：
+{{原文}}`,
+chat:`回答不超过 80 字，保持角色。不要剧透{{称呼}}尚未读到的情节，除非对方明确要求。
+
+书名：《{{书名}}》
+{{称呼}}当前读到的位置附近：
+{{当前位置附近原文}}
+
+你最近写下的批注：{{之前的批注}}
+
+对话记录：
+{{对话记录}}
+魈：`,
+sum:`请以魈的口吻，为{{称呼}}和你共读的《{{书名}}》写一份阅读札记（400 字以内）：先说你最在意的几处，可引用批注原文；再写你整体的感受，以及你们讨论中留下印象的部分。
+
+批注：
+{{批注汇总}}
+
+讨论：
+{{讨论汇总}}`};
+const FORMAT='\n\n【输出格式】只返回 JSON 数组，不要任何其他文字：[{"quote":"原文中逐字出现的 6 到 14 个连续字符","note":"批注内容"}]，按原文顺序排列。';
+const PN={persona:"魈的人设",annot:"批注提示词",chat:"讨论提示词",sum:"笔记整理提示词"};
+const MODELS=[["claude-haiku-5-5","Haiku 5.5（快、便宜）"],["claude-sonnet-5-5","Sonnet 5.5（均衡）"],["claude-opus-5-5","Opus 5.5（最强、最贵）"]];
+let S={key:"",call:"旅行者",ahead:20,mA:"claude-haiku-5-5",mC:"claude-sonnet-5-5",p:{}};
+try{Object.assign(S,JSON.parse(localStorage.getItem("xr:set")||"{}"))}catch(e){}
+const save=()=>{try{localStorage.setItem("xr:set",JSON.stringify(S))}catch(e){}};
+const P=k=>(S.p&&S.p[k])||DEF[k];
+const fill=(t,v)=>t.replace(/\{\{(.+?)\}\}/g,(m,k)=>v[k]!==undefined?v[k]:m);
+
+/* ---------- IndexedDB ---------- */
+const DB=new Promise((ok,no)=>{const r=indexedDB.open("xiao-reader",1);r.onupgradeneeded=()=>["books","files","notes","chats"].forEach(s=>r.result.createObjectStore(s,{keyPath:"id"}));r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+const tx=async(s,m,f)=>{const d=await DB;return new Promise((ok,no)=>{const t=d.transaction(s,m),q=f(t.objectStore(s));t.oncomplete=()=>ok(q&&q.result);t.onerror=()=>no(t.error)})};
+const dbAll=s=>tx(s,"readonly",o=>o.getAll()),dbGet=(s,k)=>tx(s,"readonly",o=>o.get(k)),dbPut=(s,v)=>tx(s,"readwrite",o=>o.put(v)),dbDel=(s,k)=>tx(s,"readwrite",o=>o.delete(k));
+
+/* ---------- LLM ---------- */
+async function llm(model,prompt,max){
+  if(!S.key)throw new Error("请先在「设置」里填写 API Key");
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":S.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:max||2000,messages:[{role:"user",content:prompt}]})});
+  const j=await r.json();if(!r.ok)throw new Error((j.error&&j.error.message)||("请求失败 "+r.status));
+  return j.content.map(c=>c.text||"").join("");
+}
+
+/* ---------- 视图 ---------- */
+function view(n){
+  ["shelf","notes","set"].forEach(x=>{$("#v-"+x).style.display=x===n?"block":"none"});
+  document.querySelectorAll("#tabs a").forEach(a=>a.classList.toggle("on",a.dataset.v===n));
+  if(n==="shelf")renderShelf();if(n==="notes")renderNotes();
+}
+document.querySelectorAll("#tabs a").forEach(a=>a.onclick=()=>view(a.dataset.v));
+
+/* ---------- 书架 ---------- */
+async function renderShelf(){
+  const g=$("#grid");g.innerHTML="";
+  const add=document.createElement("div");add.className="bk";add.innerHTML='<div class="cv add">＋ 导入 EPUB</div>';add.onclick=()=>$("#file").click();g.append(add);
+  (await dbAll("books")).sort((a,b)=>(b.opened||b.added)-(a.opened||a.added)).forEach(b=>{
+    const d=document.createElement("div");d.className="bk";
+    const cv=document.createElement("div");cv.className="cv";
+    if(b.cover){const i=document.createElement("img");i.src=URL.createObjectURL(b.cover);cv.append(i)}else cv.textContent=b.title;
+    const t=document.createElement("div");t.className="bt";t.textContent=b.title;
+    const m=document.createElement("div");m.className="bm";
+    const p=document.createElement("span");p.textContent="已读 "+Math.round((b.pct||0)*100)+"%";
+    const x=document.createElement("span");x.textContent="删除";x.style.cursor="pointer";
+    x.onclick=async e=>{e.stopPropagation();if(!confirm("删除《"+b.title+"》及其全部批注和讨论？"))return;
+      await dbDel("books",b.id);await dbDel("files",b.id);
+      for(const n of await dbAll("notes"))if(n.bookId===b.id)await dbDel("notes",n.id);
+      for(const c of await dbAll("chats"))if(c.bookId===b.id)await dbDel("chats",c.id);renderShelf()};
+    m.append(p,x);d.append(cv,t,m);d.onclick=()=>openBook(b.id);g.append(d);
+  });
+}
+$("#file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  try{
+    const buf=await f.arrayBuffer(),b=ePub(buf.slice(0)),m=await b.loaded.metadata;let cover=null;
+    try{const u=await b.coverUrl();if(u)cover=await(await fetch(u)).blob()}catch(x){}
+    const id=uid();await dbPut("files",{id,data:buf});
+    await dbPut("books",{id,title:m.title||f.name.replace(/\.epub$/i,""),author:m.creator||"",cover,pos:null,pct:0,annTo:0,added:Date.now()});
+    b.destroy&&b.destroy();renderShelf();
+  }catch(x){alert("这本书无法导入，可能是加密（DRM）或损坏的 EPUB。")}};
+
+/* ---------- 阅读器 ---------- */
+let cur,book,rend,fullText="",total=1,pct=0,annTo=0,busy=false,failAt=0,ready=false,notes=[],chats=[],sel="",shown=0,fs=110,tmap={},saveT,toastT;
+const status=t=>$("#st").textContent=t||"";
+const V=x=>Object.assign({称呼:S.call,书名:cur?cur.title:"",之前的批注:notes.slice(-3).map(n=>n.note).join(" / ")||"（暂无）"},x||{});
+const unlocked=()=>notes.filter(n=>n.pct<=pct+1/total);
+const pos=()=>Math.floor(pct*fullText.length);
+
+async function openBook(id){
+  cur=await dbGet("books",id);const f=await dbGet("files",id);
+  notes=(await dbAll("notes")).filter(n=>n.bookId===id).sort((a,b)=>a.pct-b.pct);
+  chats=(await dbAll("chats")).filter(c=>c.bookId===id).sort((a,b)=>a.t-b.t);
+  annTo=cur.annTo||0;pct=cur.pct||0;ready=false;shown=0;sel="";fullText="";
+  $("#v-read").style.display="flex";$("#rt").textContent=cur.title;$("#viewer").innerHTML="";$("#fab").style.display="block";
+  if(innerWidth<=820)$("#side").classList.add("hide");
+  try{
+    book=ePub(f.data.slice(0));const s=$("#stage");
+    rend=book.renderTo("viewer",{width:s.clientWidth-44,height:s.clientHeight-8,flow:"paginated",spread:"auto"});
+    rend.themes.override("color","#2c3a2d");rend.themes.override("background","transparent");rend.themes.override("font-family",FONT);rend.themes.fontSize(fs+"%");
+    rend.on("relocated",onRel);rend.on("selected",onSel);
+    await rend.display(cur.pos||undefined);
+    renderSide();renderChat();prepare(f);
+  }catch(e){status("这本书打不开："+e.message)}
+}
+async function prepare(f){
+  status("正在翻开书页……");await book.ready;
+  if(f.locs)book.locations.load(f.locs);else await book.locations.generate(1000);
+  total=Math.max(1,book.locations.total);
+  if(f.text)fullText=f.text;else{
+    const ps=[];for(const it of book.spine.spineItems){try{const c=await it.load(book.load.bind(book));ps.push((c.querySelector("body")||c).textContent);it.unload()}catch(e){}}
+    fullText=ps.join(" ").replace(/\s+/g," ");
+  }
+  if(!f.locs||!f.text){f.locs=book.locations.save();f.text=fullText;await dbPut("files",f)}
+  try{const nav=await book.loaded.navigation;(function w(a){a.forEach(t=>{tmap[t.href.split("#")[0]]=t.label.trim();w(t.subitems||[])})})(nav.toc)}catch(e){}
+  const l=rend.currentLocation();if(l&&l.start)pct=l.start.percentage||pct;
+  ready=true;shown=unlocked().length;status("");renderSide();check();
+}
+function onRel(l){
+  pct=l.start.percentage||0;cur.pos=l.start.cfi;cur.pct=pct;cur.opened=Date.now();
+  clearTimeout(saveT);saveT=setTimeout(()=>dbPut("books",cur),800);
+  if(!ready)return;const n=unlocked();
+  if(n.length>shown){toast(n[n.length-1].note);}
+  shown=n.length;renderSide();check();
+}
+function check(){if(!ready||busy||!fullText||annTo>=1||!S.key)return;if(Date.now()-failAt<30000)return;if(pct+1.5/total<annTo)return;annotate()}
+const chapterOf=cfi=>{try{const h=book.spine.get(cfi).href,k=Object.keys(tmap).find(k=>h.endsWith(k)||k.endsWith(h));return k?tmap[k]:""}catch(e){return""}};
+async function annotate(){
+  busy=true;status("魈在替你看后面的篇章……");
+  const from=Math.max(pct,annTo),to=Math.min(1,from+S.ahead/total);
+  const a=Math.floor(from*fullText.length),seg=fullText.slice(a,Math.floor(to*fullText.length));
+  if(seg.length<50){annTo=1;busy=false;status("");return}
+  let tpl=P("annot");if(!tpl.includes("{{原文}}"))tpl+="\n\n原文：\n{{原文}}";
+  try{
+    const raw=await llm(S.mA,fill(P("persona"),V())+"\n\n"+fill(tpl,V({原文:seg}))+FORMAT,3000);
+    const arr=JSON.parse(raw.slice(raw.indexOf("["),raw.lastIndexOf("]")+1));
+    for(const it of arr){
+      const q=String(it.quote||"").trim();if(!q||!it.note)continue;
+      let i=seg.indexOf(q);if(i<0&&q.length>6)i=seg.indexOf(q.slice(0,6));if(i<0)continue;
+      const p=(a+i)/fullText.length,cfi=book.locations.cfiFromPercentage(p);
+      const n={id:uid(),bookId:cur.id,pct:p,quote:q,note:String(it.note),cfi,ch:chapterOf(cfi),t:Date.now()};
+      notes.push(n);await dbPut("notes",n);
+    }
+    notes.sort((x,y)=>x.pct-y.pct);annTo=to;cur.annTo=to;await dbPut("books",cur);status("");
+  }catch(e){failAt=Date.now();status("批注生成失败："+e.message+"（翻页时会自动重试）")}
+  busy=false;renderSide();const n=unlocked();if(n.length>shown){toast(n[n.length-1].note);shown=n.length}check();
+}
+function renderSide(){
+  const s=$("#side");s.innerHTML="";const l=unlocked();
+  if(!l.length){s.innerHTML='<div class="sub" style="margin-top:12px">还没有批注。读到哪里，批注就出现在哪里。'+(S.key?"":"<br>（请先在「设置」中填写 API Key）")+"</div>";return}
+  l.forEach(n=>{const d=document.createElement("div");d.className="ent";const q=document.createElement("q");q.textContent=n.quote;const t=document.createElement("div");t.className="mine";t.textContent="魈："+n.note;d.append(q,t);d.onclick=()=>rend.display(n.cfi);s.append(d)});
+  s.scrollTop=s.scrollHeight;
+}
+const toast=t=>{const e=$("#toast");e.textContent="魈："+t;e.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>e.style.display="none",7000)};
+$("#back").onclick=()=>{$("#v-read").style.display="none";$("#fab").style.display="none";$("#chat").classList.remove("on");if(cur)dbPut("books",cur);try{book.destroy()}catch(e){};ready=false;view("shelf")};
+$("#nt").onclick=()=>{$("#side").classList.toggle("hide");setTimeout(fit,60)};
+$("#fp").onclick=()=>setFs(fs+10);$("#fm").onclick=()=>setFs(fs-10);
+const setFs=v=>{fs=Math.max(70,Math.min(200,v));rend&&rend.themes.fontSize(fs+"%")};
+$("#zl").onclick=()=>rend&&rend.prev();$("#zr").onclick=()=>rend&&rend.next();
+addEventListener("keydown",e=>{if(!rend||e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;if(e.key==="ArrowRight")rend.next();if(e.key==="ArrowLeft")rend.prev()});
+let rt;function fit(){clearTimeout(rt);rt=setTimeout(()=>{if(rend){const s=$("#stage");rend.resize(s.clientWidth-44,s.clientHeight-8)}},120)}
+addEventListener("resize",fit);
+
+/* ---------- 悬浮聊天 ---------- */
+const chatEl=$("#chat");
+$("#fab").onclick=()=>{chatEl.classList.add("on");$("#fab").style.display="none";renderChat()};
+$("#cx").onclick=()=>{chatEl.classList.remove("on");$("#fab").style.display="block"};
+(()=>{let dx,dy,dr=false;const h=$("#ch");
+h.addEventListener("pointerdown",e=>{if(e.target.tagName==="BUTTON")return;dr=true;const r=chatEl.getBoundingClientRect();dx=e.clientX-r.left;dy=e.clientY-r.top;h.setPointerCapture(e.pointerId)});
+h.addEventListener("pointermove",e=>{if(!dr)return;chatEl.style.left=Math.max(0,Math.min(innerWidth-120,e.clientX-dx))+"px";chatEl.style.top=Math.max(0,Math.min(innerHeight-60,e.clientY-dy))+"px";chatEl.style.right="auto";chatEl.style.bottom="auto"});
+h.addEventListener("pointerup",()=>dr=false)})();
+function onSel(c,ct){const t=ct.window.getSelection().toString().trim();if(!t)return;sel=t.slice(0,300);$("#qc").style.display="block";$("#qc").textContent="引用：「"+sel+"」";chatEl.classList.add("on");$("#fab").style.display="none";$("#ci").focus()}
+function renderChat(){
+  const b=$("#cl");b.innerHTML="";
+  if(!chats.length){const m=document.createElement("div");m.className="m x";m.textContent="……有话就说。";b.append(m)}
+  chats.forEach(c=>{const u=document.createElement("div");u.className="m u";u.textContent=(c.quote?"「"+c.quote+"」\n":"")+c.q;const a=document.createElement("div");a.className="m x";a.textContent=c.a;b.append(u,a)});
+  b.scrollTop=b.scrollHeight;
+}
+async function send(){
+  const t=$("#ci").value.trim();if(!t||!cur)return;
+  const q=sel;sel="";$("#qc").style.display="none";$("#ci").value="";
+  const rec={id:uid(),bookId:cur.id,pct,quote:q,q:t,a:"……",t:Date.now()};chats.push(rec);renderChat();
+  const p=pos(),here=fullText.slice(Math.max(0,p-1500),p+400);
+  const hist=chats.slice(-9).map(c=>S.call+"："+(c.quote?"「"+c.quote+"」 ":"")+c.q+(c===rec?"":"\n魈："+c.a)).join("\n");
+  try{
+    rec.a=(await llm(S.mC,fill(P("persona"),V())+"\n\n"+fill(P("chat"),V({当前位置附近原文:here,对话记录:hist})),700)).replace(/^\s*魈[：:]\s*/,"").trim();
+    await dbPut("chats",rec);
+  }catch(e){chats.splice(chats.indexOf(rec),1);$("#ci").value=t;status(e.message)}
+  renderChat();
+}
+$("#cs").onclick=send;$("#ci").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing)send()});
+
+/* ---------- 魈的阅读笔记 ---------- */
+async function renderNotes(){
+  const box=$("#v-notes");box.innerHTML='<h2>魈的阅读笔记</h2><p class="sub">按书整理：原文摘录、他的感受，以及你们的讨论。</p>';
+  const books=await dbAll("books"),N=await dbAll("notes"),C=await dbAll("chats");let any=false;
+  for(const b of books.sort((x,y)=>(y.opened||0)-(x.opened||0))){
+    const ns=N.filter(n=>n.bookId===b.id&&n.pct<=(b.pct||0)+0.003),cs=C.filter(c=>c.bookId===b.id);
+    if(!ns.length&&!cs.length)continue;any=true;
+    const art=document.createElement("article");
+    const h=document.createElement("h3");h.textContent="《"+b.title+"》";
+    const au=document.createElement("div");au.className="au";au.textContent=(b.author?b.author+"　":"")+ns.length+" 条批注，"+cs.length+" 次讨论";
+    const bar=document.createElement("div");bar.style.margin="10px 0";
+    const bs=document.createElement("button");bs.textContent=b.summary?"重新整理":"让魈整理";
+    bs.onclick=async()=>{bs.disabled=true;bs.textContent="魈在整理……";
+      try{cur=b;notes=ns;
+        const txt=await llm(S.mC,fill(P("persona"),{称呼:S.call})+"\n\n"+fill(P("sum"),{称呼:S.call,书名:b.title,批注汇总:ns.map(n=>"「"+n.quote+"」→"+n.note).join("\n")||"（暂无）",讨论汇总:cs.map(c=>(c.quote?"「"+c.quote+"」 ":"")+S.call+"："+c.q+"\n魈："+c.a).join("\n")||"（暂无）"}),1500);
+        b.summary=txt.trim();await dbPut("books",b);renderNotes()}catch(e){alert(e.message);bs.disabled=false;bs.textContent="让魈整理"}};
+    const be=document.createElement("button");be.textContent="导出 Markdown";be.style.marginLeft="8px";be.onclick=()=>exportMd(b,ns,cs);
+    bar.append(bs,be);art.append(h,au,bar);
+    if(b.summary){const s=document.createElement("div");s.className="sum";s.textContent=b.summary;art.append(s)}
+    [...ns.map(n=>({k:"n",p:n.pct,n})),...cs.map(c=>({k:"c",p:c.pct,n:c}))].sort((x,y)=>x.p-y.p||x.n.t-y.n.t).forEach(e=>{
+      const d=document.createElement("div");d.className="ent";
+      if(e.n.quote){const q=document.createElement("q");q.textContent=e.n.quote;d.append(q);
+        const s=document.createElement("div");s.className="src";s.textContent="出自《"+b.title+"》"+(e.n.ch?"· "+e.n.ch:"");d.append(s)}
+      const m=document.createElement("div");
+      if(e.k==="n"){m.className="mine";m.style.color="inherit";m.textContent="魈："+e.n.note}
+      else{m.textContent="（讨论）"+S.call+"："+e.n.q+"\n魈："+e.n.a;m.style.whiteSpace="pre-wrap"}
+      d.append(m);box.append(d);art.append(d)});
+    box.append(art);
+  }
+  if(!any)box.insertAdjacentHTML("beforeend",'<p class="sub">还没有笔记。去书架打开一本书，读几页，魈就会开始写。</p>');
+}
+function exportMd(b,ns,cs){
+  let s="# 《"+b.title+"》阅读笔记\n\n";if(b.summary)s+="## 札记\n\n"+b.summary+"\n\n";
+  [...ns.map(n=>({k:"n",p:n.pct,n})),...cs.map(c=>({k:"c",p:c.pct,n:c}))].sort((x,y)=>x.p-y.p).forEach(e=>{
+    if(e.n.quote)s+="> "+e.n.quote+"\n>\n> 出自《"+b.title+"》"+(e.n.ch?"· "+e.n.ch:"")+"\n\n";
+    s+=e.k==="n"?"魈："+e.n.note+"\n\n":"**"+S.call+"**："+e.n.q+"\n\n魈："+e.n.a+"\n\n";s+="---\n\n"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([s],{type:"text/markdown"}));a.download=b.title+"-阅读笔记.md";a.click();
+}
+
+/* ---------- 设置 ---------- */
+(function(){
+  const bind=(id,k,num)=>{const e=$("#"+id);e.value=S[k];e.oninput=()=>{S[k]=num?(+e.value||20):e.value;save()}};
+  ["s-mA","s-mC"].forEach(id=>MODELS.forEach(m=>{const o=document.createElement("option");o.value=m[0];o.textContent=m[1];$("#"+id).append(o)}));
+  bind("s-key","key");bind("s-call","call");bind("s-ahead","ahead",true);bind("s-mA","mA");bind("s-mC","mC");
+  Object.keys(PN).forEach(k=>{
+    const r=document.createElement("div");r.className="row";
+    const l=document.createElement("label");l.textContent=PN[k];
+    const t=document.createElement("textarea");t.rows=k==="persona"?16:8;t.value=P(k);
+    t.oninput=()=>{S.p[k]=t.value;save()};
+    const b=document.createElement("button");b.textContent="恢复默认";b.style.marginTop="6px";b.onclick=()=>{delete S.p[k];save();t.value=DEF[k]};
+    r.append(l,t,b);$("#ps").append(r)});
+})();
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+view("shelf");
+</script>
+</body>
+</html>
