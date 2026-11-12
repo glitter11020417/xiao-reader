@@ -85,6 +85,10 @@ article>h3{font-size:20px;margin:0;font-weight:600}
 #cf{display:flex;gap:8px;padding:10px}
 #fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:50px;height:50px;border-radius:25px;padding:0;background:var(--accent);color:#f4f9ef;border-color:var(--accent);z-index:65;display:none}
 @media (max-width:820px){#side{position:absolute;right:0;top:0;bottom:0;z-index:5;box-shadow:-6px 0 18px rgba(30,50,30,.2)}.two{grid-template-columns:1fr}}
+
+:root[data-theme="sky"]{--bg:#cfe4f6;--paper:rgba(245,250,254,.94);--ink:#1f3349;--mute:#62788f;--accent:#3f7fb6;--line:rgba(31,51,73,.18);--bgimg:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27600%27%20viewBox%3D%270%200%20900%20600%27%3E%3Cdefs%3E%3Cfilter%20id%3D%27b%27%20x%3D%27-50%25%27%20y%3D%27-50%25%27%20width%3D%27200%25%27%20height%3D%27200%25%27%3E%3CfeGaussianBlur%20stdDeviation%3D%2714%27%2F%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cg%20fill%3D%27white%27%20filter%3D%27url%28%23b%29%27%20opacity%3D%27.8%27%3E%3Cellipse%20cx%3D%27170%27%20cy%3D%27120%27%20rx%3D%2790%27%20ry%3D%2728%27%2F%3E%3Cellipse%20cx%3D%27235%27%20cy%3D%2798%27%20rx%3D%2760%27%20ry%3D%2730%27%2F%3E%3Cellipse%20cx%3D%27115%27%20cy%3D%27106%27%20rx%3D%2752%27%20ry%3D%2724%27%2F%3E%3Cellipse%20cx%3D%27640%27%20cy%3D%27262%27%20rx%3D%27110%27%20ry%3D%2730%27%2F%3E%3Cellipse%20cx%3D%27705%27%20cy%3D%27238%27%20rx%3D%2770%27%20ry%3D%2732%27%2F%3E%3Cellipse%20cx%3D%27555%27%20cy%3D%27250%27%20rx%3D%2758%27%20ry%3D%2724%27%2F%3E%3Cellipse%20cx%3D%27300%27%20cy%3D%27470%27%20rx%3D%27100%27%20ry%3D%2726%27%2F%3E%3Cellipse%20cx%3D%27362%27%20cy%3D%27450%27%20rx%3D%2764%27%20ry%3D%2730%27%2F%3E%3Cellipse%20cx%3D%27238%27%20cy%3D%27458%27%20rx%3D%2754%27%20ry%3D%2722%27%2F%3E%3Cellipse%20cx%3D%27810%27%20cy%3D%27520%27%20rx%3D%2770%27%20ry%3D%2720%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"),linear-gradient(180deg,#b9dbf3 0%,#d9ebf8 55%,#eef6fc 100%);--bgsz:900px 600px,100% 100%;--bgrp:repeat,no-repeat}
+body,#v-read{background-image:var(--bgimg,none);background-size:var(--bgsz,auto);background-repeat:var(--bgrp,repeat)}
+.ent .del{float:right;font-size:12px;padding:0 10px;margin-left:10px;line-height:1.7}
 </style>
 </head>
 <body>
@@ -100,7 +104,7 @@ article>h3{font-size:20px;margin:0;font-weight:600}
 <div class="two">
 <div class="row"><label>翻页方式</label><select id="r-flow"><option value="paged">左右翻页（点击两侧或左右滑动）</option><option value="scroll">上下滚动</option></select></div>
 <div class="row"><label>页面布局（仅左右翻页）</label><select id="r-spread"><option value="auto">横屏时双页</option><option value="none">始终单页</option></select></div>
-<div class="row"><label>主题</label><select id="r-theme"><option value="green">护眼绿</option><option value="paper">米黄纸</option><option value="white">白色</option><option value="night">夜间</option></select></div>
+<div class="row"><label>主题</label><select id="r-theme"><option value="green">护眼绿</option><option value="paper">米黄纸</option><option value="white">白色</option><option value="sky">蓝天白云</option><option value="night">夜间</option></select></div>
 <div class="row"><label>正文字体</label><select id="r-font"><option value="song">宋体（内置）</option><option value="hei">黑体（系统）</option><option value="kai">楷体（系统，若有）</option><option value="custom">自定义字体</option></select></div>
 <div class="row"><label>字号 <b id="v-fsz"></b></label><input type="range" id="r-fsz" min="14" max="36" step="1"></div>
 <div class="row"><label>行间距 <b id="v-lh"></b></label><input type="range" id="r-lh" min="1.2" max="2.6" step="0.1"></div>
@@ -149,7 +153,7 @@ article>h3{font-size:20px;margin:0;font-weight:600}
 
 <section id="v-read">
   <div id="rb"><button id="back">‹ 书架</button><div id="rt"></div><select id="toc" style="width:auto;max-width:170px"><option value="">目录</option></select><button id="pv">‹</button><button id="nx">›</button><button id="fm">A−</button><button id="fp">A+</button><button id="nt">批注</button></div>
-  <div id="st"><span id="as"></span><span id="st2"></span></div>
+  <div id="st"><span id="as"></span><button id="a-stop" style="display:none;padding:0 12px">停止批注</button><span id="st2"></span></div>
   <div id="rm"><div id="stage"><div id="viewer"></div><button class="zone" id="zl" style="left:0"></button><button class="zone" id="zr" style="right:0"></button></div>
   <aside id="side"><div id="ctl">
   <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="c-auto" style="width:auto"> 自动批注（读到哪里批到哪里）</label>
@@ -232,17 +236,17 @@ const dbAll=s=>tx(s,"readonly",o=>o.getAll()),dbGet=(s,k)=>tx(s,"readonly",o=>o.
 /* ---------- LLM ---------- */
 const baseOf=p=>p.url.trim().replace(/\/+$/,"");
 const errMsg=j=>j&&j.error?(j.error.message||(typeof j.error==="string"?j.error:JSON.stringify(j.error))):((j&&j.message)||"");
-async function hf(url,opt){try{return await fetch(url,opt)}catch(e){throw new Error("无法连接（"+e.message+"）。可能是网络不通，或该服务不允许浏览器直接访问（CORS）。")}}
-async function callP(p,model,prompt,max){
+async function hf(url,opt){try{return await fetch(url,opt)}catch(e){if(e&&e.name==="AbortError")throw e;throw new Error("无法连接（"+e.message+"）。可能是网络不通，或该服务不允许浏览器直接访问（CORS）。")}}
+async function callP(p,model,prompt,max,signal){
   if(!p||!p.key)throw new Error("请先在「设置」里添加接口并填写 API Key");
   if(!model)throw new Error("请先在「设置」里选择模型");
   const b=baseOf(p);
   if(p.type==="anthropic"){
-    const r=await hf(b.replace(/\/v1$/,"")+"/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":p.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:max,messages:[{role:"user",content:prompt}]})});
+    const r=await hf(b.replace(/\/v1$/,"")+"/v1/messages",{method:"POST",signal,headers:{"content-type":"application/json","x-api-key":p.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:max,messages:[{role:"user",content:prompt}]})});
     const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(errMsg(j)||("请求失败 "+r.status));
     return j.content.map(c=>c.text||"").join("");
   }
-  const go=k=>hf(b+"/chat/completions",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+p.key},body:JSON.stringify({model,[k]:max*3,messages:[{role:"user",content:prompt}]})});
+  const go=k=>hf(b+"/chat/completions",{method:"POST",signal,headers:{"content-type":"application/json",authorization:"Bearer "+p.key},body:JSON.stringify({model,[k]:max*3,messages:[{role:"user",content:prompt}]})});
   let r=await go("max_tokens"),j=await r.json().catch(()=>({}));
   if(!r.ok&&/max_completion_tokens/.test(errMsg(j))){r=await go("max_completion_tokens");j=await r.json().catch(()=>({}))}
   if(!r.ok)throw new Error(errMsg(j)||("请求失败 "+r.status));
@@ -257,7 +261,7 @@ async function fetchModels(p){
   const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(errMsg(j)||("请求失败 "+r.status));
   return (j.data||j.models||[]).map(m=>String(typeof m==="string"?m:(m.id||m.name||"")).replace(/^models\//,"")).filter(Boolean).sort();
 }
-const llm=(task,prompt,max)=>{const a=task==="A";return callP(S.profiles.find(x=>x.id===(a?S.aP:S.cP)),a?S.aM:S.cM,prompt,max||2000)};
+const llm=(task,prompt,max,signal)=>{const a=task==="A";return callP(S.profiles.find(x=>x.id===(a?S.aP:S.cP)),a?S.aM:S.cM,prompt,max||2000,signal)};
 const hasLLM=()=>{const p=S.profiles.find(x=>x.id===S.aP);return !!(p&&p.key&&S.aM)};
 
 /* ---------- 视图 ---------- */
@@ -305,7 +309,7 @@ $("#file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)
   }catch(x){alert("导入失败（"+step+"）："+(x&&x.message||x))}};
 
 /* ---------- 阅读器 ---------- */
-let customUrl="",cur,book,rend,fullText="",total=1,pct=0,annTo=0,paras=[],annMsg="",lastLen=0,busy=false,failAt=0,ready=false,notes=[],chats=[],sel="",shown=0,fs=110,tmap={},saveT,toastT;
+let customUrl="",cur,book,rend,fullText="",total=1,pct=0,annTo=0,paras=[],annMsg="",lastLen=0,annAbort=null,annT0=0,annTick=0,busy=false,failAt=0,ready=false,notes=[],chats=[],sel="",shown=0,fs=110,tmap={},saveT,toastT;
 const status=t=>$("#st2").textContent=t||"";
 const V=x=>Object.assign({称呼:S.call,书名:cur?cur.title:"",之前的批注:notes.slice(-3).map(n=>n.note).join(" / ")||"（暂无）"},x||{});
 const unlocked=()=>notes.filter(n=>n.pct<=pct+1/total);
@@ -370,7 +374,7 @@ function onRel(l){
   if(n.length>shown){toast(n[n.length-1].note);}
   shown=n.length;renderSide();annState();check();
 }
-const MAXC=36000,PUNC=/[\s\p{P}\p{S}]/u;
+let TIMEOUT=180000;const MAXC=36000,PUNC=/[\s\p{P}\p{S}]/u;
 function buildParas(){paras=[];let s0=0;for(const t of fullText.split("\n")){paras.push({s:s0,e:s0+t.length});s0+=t.length+1}if(!paras.length)paras=[{s:0,e:0}]}
 function pIdx(off){let lo=0,hi=paras.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(paras[m].s<=off)lo=m;else hi=m-1}return lo}
 function check(){
@@ -384,11 +388,14 @@ const chapterOf=cfi=>{try{const h=book.spine.get(cfi).href,k=Object.keys(tmap).f
 function annState(){
   const e=$("#as");if(!e)return;let t="",c="";
   if(!cur||!rend)t="";
-  else if(busy){t="✎ "+annMsg;c="busy"}
+  else if(busy){t="✎ "+annMsg+" 已用 "+Math.round((Date.now()-annT0)/1000)+" 秒";c="busy"}
   else if(!ready)t="正在准备全书……";
   else if(!hasLLM())t="未配置批注模型（设置 → 用途）";
   else t="魈待命 · 已批注至 "+Math.min(100,Math.round(annTo/(fullText.length||1)*100))+"% · 自动批注"+(S.auto?"开":"关")+" · 共 "+notes.length+" 条";
-  e.textContent=t;e.className=c;const g=$("#c-go");if(g)g.disabled=busy||!ready;
+  e.textContent=t;e.className=c;
+  if(!busy&&annTick){clearInterval(annTick);annTick=0}
+  const st=$("#a-stop");if(st)st.style.display=busy?"inline-block":"none";
+  const g=$("#c-go");if(g){g.disabled=!busy&&!ready;g.textContent=busy?"停止批注":goLabel()}
 }
 async function annotate(manual){
   if(busy||!ready)return;
@@ -400,19 +407,27 @@ async function annotate(manual){
   if(paras[i1].e-paras[i0].s>MAXC)i1=pIdx(paras[i0].s+MAXC);
   const a=paras[i0].s,b=paras[i1].e,seg=fullText.slice(a,b);
   if(seg.trim().length<30){annTo=b+1;return}
-  busy=true;annMsg="魈正在批注第 "+(i0+1)+"–"+(i1+1)+" 段（约 "+seg.length+" 字）……";annState();status("");
+  busy=true;annMsg="魈正在批注第 "+(i0+1)+"–"+(i1+1)+" 段（约 "+seg.length+" 字）……";annT0=Date.now();annAbort=new AbortController();
+  let timedOut=false;const tm=setTimeout(()=>{timedOut=true;annAbort.abort()},TIMEOUT);
+  if(!annTick)annTick=setInterval(annState,1000);annState();status("");
   let tpl=P("annot");if(!tpl.includes("{{原文}}"))tpl+="\n\n原文：\n{{原文}}";
   const want=Math.max(3,Math.min(14,Math.round(seg.length/1500)));
   let raw="",arr;
   try{
-    raw=await llm("A",fill(P("persona"),V())+"\n\n"+fill(tpl,V({原文:seg,条数:String(want)}))+FORMAT,4000);
+    raw=await llm("A",fill(P("persona"),V())+"\n\n"+fill(tpl,V({原文:seg,条数:String(want)}))+FORMAT,4000,annAbort.signal);
+    clearTimeout(tm);
     if(cur!==my){busy=false;return}
     const p1=raw.indexOf("["),p2=raw.lastIndexOf("]");if(p1<0||p2<p1)throw new Error("FMT");
     arr=JSON.parse(raw.slice(p1,p2+1));if(!Array.isArray(arr))throw new Error("FMT");
   }catch(e){
-    busy=false;
-    if(cur===my){failAt=Date.now();
-      status((e.message==="FMT"||e instanceof SyntaxError)?"批注失败：模型返回的不是有效的 JSON（开头："+raw.replace(/\s+/g," ").slice(0,60)+"……）。可以换一个更强的模型。":"批注失败："+e.message+(manual?"":"（翻页时会自动重试）"));annState()}
+    clearTimeout(tm);busy=false;
+    if(cur===my){
+      if(e&&e.name==="AbortError"){
+        if(timedOut){failAt=Date.now();status("批注超时（超过 "+(TIMEOUT/1000)+" 秒没有响应），已停止。可以换更快的模型，或把每次批注的段数调小。")}
+        else status("已停止批注（自动批注已关闭，需要时可在面板里重新打开）。");
+      }else{failAt=Date.now();
+        status((e.message==="FMT"||e instanceof SyntaxError)?"批注失败：模型返回的不是有效的 JSON（开头："+raw.replace(/\s+/g," ").slice(0,60)+"……）。可以换一个更强的模型。":"批注失败："+e.message+(manual?"":"（翻页时会自动重试）"))}
+      annState()}
     return}
   const map=[];let norm="";for(let k=0;k<seg.length;k++){if(!PUNC.test(seg[k])){norm+=seg[k];map.push(k)}}
   const fresh=[];let loose=0;
@@ -461,10 +476,12 @@ function renderSide(){
     const t=document.createElement("div");t.className="mine";t.textContent="魈："+n.note;d.append(t);d.onclick=()=>rend.display(n.cfi);s.append(d)});
   s.scrollTop=s.scrollHeight;
 }
+const goLabel=()=>"立即批注后 "+(S.unit==="para"?S.aheadG:S.ahead)+" "+(S.unit==="para"?"段":"页");
+function stopAnn(){if(!busy)return;if(S.auto){S.auto=false;save();syncAnn()}if(annAbort)annAbort.abort()}
 function syncAnn(){
-  const n=S.unit==="para"?S.aheadG:S.ahead,u=S.unit==="para"?"段":"页",set=(id,f)=>{const e=$("#"+id);if(e)f(e)};
+  const n=S.unit==="para"?S.aheadG:S.ahead,set=(id,f)=>{const e=$("#"+id);if(e)f(e)};
   set("s-auto",e=>e.value=S.auto?"1":"0");set("s-unit",e=>e.value=S.unit);set("s-ng",e=>e.value=S.aheadG);set("s-np",e=>e.value=S.ahead);
-  set("c-auto",e=>e.checked=S.auto);set("c-u",e=>e.value=S.unit);set("c-n",e=>e.value=n);set("c-go",e=>e.textContent="立即批注后 "+n+" "+u);
+  set("c-auto",e=>e.checked=S.auto);set("c-u",e=>e.value=S.unit);set("c-n",e=>e.value=n);set("c-go",e=>{if(!busy)e.textContent=goLabel()});
 }
 function initAnn(){
   const upd=()=>{save();syncAnn();annState();check()};
@@ -475,7 +492,7 @@ function initAnn(){
   $("#c-auto").onchange=e=>{S.auto=e.target.checked;upd()};
   $("#c-u").onchange=e=>{S.unit=e.target.value;upd()};
   $("#c-n").onchange=e=>{const v=Math.max(1,Math.min(S.unit==="para"?400:40,+e.target.value||1));if(S.unit==="para")S.aheadG=v;else S.ahead=v;upd()};
-  $("#c-go").onclick=()=>annotate(true);
+  $("#c-go").onclick=()=>busy?stopAnn():annotate(true);$("#a-stop").onclick=stopAnn;
   syncAnn();
 }
 const toast=t=>{const e=$("#toast");e.textContent="魈："+t;e.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>e.style.display="none",7000)};
@@ -559,6 +576,12 @@ async function renderNotes(){
     if(b.summary){const s=document.createElement("div");s.className="sum";s.textContent=b.summary;art.append(s)}
     [...ns.map(n=>({k:"n",p:n.pct,n})),...cs.map(c=>({k:"c",p:c.pct,n:c}))].sort((x,y)=>x.p-y.p||x.n.t-y.n.t).forEach(e=>{
       const d=document.createElement("div");d.className="ent";
+      const del=document.createElement("button");del.className="del";del.textContent="删除";
+      del.onclick=async()=>{if(!confirm(e.k==="n"?"删除魈的这条批注？":"删除这次讨论？"))return;
+        await dbDel(e.k==="n"?"notes":"chats",e.n.id);d.remove();
+        const arr=e.k==="n"?ns:cs;arr.splice(arr.indexOf(e.n),1);
+        au.textContent=(b.author?b.author+"　":"")+ns.length+" 条批注，"+cs.length+" 次讨论"};
+      d.append(del);
       if(e.n.quote){const q=document.createElement("q");q.textContent=e.n.quote;d.append(q);
         const s=document.createElement("div");s.className="src";s.textContent="出自《"+b.title+"》"+(e.n.ch?"· "+e.n.ch:"");d.append(s)}
       const m=document.createElement("div");
